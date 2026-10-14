@@ -44,13 +44,13 @@
 
 <script>
     // --- CONFIGURATION ---
-    const GITHUB_USER = 'zebmoffat'; 
-    const GITHUB_REPO = 'food-tracker';       
+    const GITHUB_USER = 'YOUR_GITHUB_USERNAME'; // Keep your username here
+    const GITHUB_REPO = 'YOUR_REPO_NAME';       // Keep your repo name here
     
     const TRACKING_ORDER = ['Calories', 'Fat', 'Carbs', 'Protein', 'Fiber', 'Sodium', 'Potassium'];
     
     const DAILY_GOALS = {
-        Calories: 2300, Fat: 100, Carbs: 200, Protein: 150, Fiber: 40, Sodium: 2500, Potassium: 4000
+        Calories: 2500, Fat: 50, Carbs: 250, Protein: 160, Fiber: 30, Sodium: 1500, Potassium: 3500
     };
     
     const COLORS = {
@@ -64,12 +64,18 @@
     // --- INITIALIZATION ---
     async function init() {
         await loadCSV();
-        renderCircles();
         
         if (!localStorage.getItem('gh_pat')) {
             const token = prompt("Enter your GitHub Personal Access Token (PAT) with repo scope:");
             if (token) localStorage.setItem('gh_pat', token);
         }
+        
+        renderCircles(); // Render with zeros initially
+        
+        // Fetch today's data if it exists
+        document.getElementById('status').innerText = 'Loading today\'s log...';
+        await fetchTodaysLog();
+        document.getElementById('status').innerText = '';
     }
 
     async function loadCSV() {
@@ -126,6 +132,50 @@
                 </div>
             `;
         });
+    }
+
+    // --- FETCH EXISTING DATA ---
+    async function fetchTodaysLog() {
+        const token = localStorage.getItem('gh_pat');
+        if (!token) return;
+
+        const date = new Date();
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const path = `${year}/${month}/${day}.txt`;
+        const apiUrl = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${path}`;
+
+        try {
+            const getRes = await fetch(apiUrl, {
+                headers: { 'Authorization': `token ${token}` }
+            });
+
+            if (getRes.ok) {
+                const fileData = await getRes.json();
+                const content = decodeURIComponent(escape(atob(fileData.content)));
+                const lines = content.split('\n');
+
+                // Regex to extract numbers exactly as they are formatted when saving
+                const regex = /Cal:([\d.]+),\s*Fat:([\d.]+)g,\s*Carbs:([\d.]+)g,\s*Pro:([\d.]+)g,\s*Fiber:([\d.]+)g,\s*Na:([\d.]+)mg,\s*K:([\d.]+)mg/;
+
+                lines.forEach(line => {
+                    const match = line.match(regex);
+                    if (match) {
+                        currentTotals.Calories += parseFloat(match[1]);
+                        currentTotals.Fat += parseFloat(match[2]);
+                        currentTotals.Carbs += parseFloat(match[3]);
+                        currentTotals.Protein += parseFloat(match[4]);
+                        currentTotals.Fiber += parseFloat(match[5]);
+                        currentTotals.Sodium += parseFloat(match[6]);
+                        currentTotals.Potassium += parseFloat(match[7]);
+                    }
+                });
+                renderCircles(); // Update UI with populated totals
+            }
+        } catch (error) {
+            console.error("No log for today yet or error fetching:", error);
+        }
     }
 
     // --- GITHUB API INTEGRATION ---
