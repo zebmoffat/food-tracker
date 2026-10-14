@@ -21,11 +21,22 @@
     }
     .circle-inner span { font-size: 12px; color: #555; }
     .circle-inner strong { font-size: 16px; }
-    .controls { display: flex; flex-direction: column; gap: 15px; max-width: 300px; margin: 0 auto; }
-    select, button { padding: 12px; font-size: 16px; border-radius: 8px; border: 1px solid #ccc; }
-    button { background: #007bff; color: white; border: none; font-weight: bold; }
-    button:disabled { background: #aaa; }
-    #status { margin-top: 15px; font-size: 14px; color: #666; }
+    
+    .controls { display: flex; flex-direction: column; gap: 15px; max-width: 350px; margin: 0 auto; }
+    .input-group { display: flex; gap: 10px; }
+    select { flex-grow: 1; padding: 12px; font-size: 16px; border-radius: 8px; border: 1px solid #ccc; }
+    
+    button { padding: 12px; font-size: 16px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; }
+    .btn-add { background: #28a745; color: white; }
+    .btn-submit { background: #007bff; color: white; width: 100%; }
+    .btn-undo { background: #dc3545; color: white; width: 100%; margin-top: 5px; }
+    button:disabled { background: #aaa; cursor: not-allowed; }
+    
+    #queue-list { list-style: none; padding: 0; margin: 0; text-align: left; }
+    #queue-list li { display: flex; justify-content: space-between; align-items: center; background: #fff; padding: 10px; border-radius: 6px; border: 1px solid #ddd; margin-bottom: 8px; font-size: 14px; }
+    .btn-remove { background: #ff4d4d; color: white; border: none; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; font-size: 14px; }
+    
+    #status { margin-top: 10px; font-size: 14px; color: #666; min-height: 20px;}
 </style>
 </head>
 <body>
@@ -35,31 +46,31 @@
 </div>
 
 <div class="controls">
-    <select id="food-select">
-        <option value="">Select a food...</option>
-    </select>
-    <button id="submit-btn" onclick="submitFood()">Log Food</button>
+    <div class="input-group">
+        <select id="food-select">
+            <option value="">Select a food...</option>
+        </select>
+        <button class="btn-add" onclick="addToQueue()">Add</button>
+    </div>
+    
+    <ul id="queue-list"></ul>
+    
+    <button class="btn-submit" id="submit-btn" onclick="submitFood()" disabled>Log Food</button>
     <div id="status"></div>
 </div>
 
 <script>
     // --- CONFIGURATION ---
-    const GITHUB_USER = 'zebmoffat'; // Keep your username here
-    const GITHUB_REPO = 'food-tracker';       // Keep your repo name here
+    const GITHUB_USER = 'zebmoffat';
+    const GITHUB_REPO = 'food-tracker';
     
     const TRACKING_ORDER = ['Calories', 'Fat', 'Carbs', 'Protein', 'Fiber', 'Sodium', 'Potassium'];
-    
-    const DAILY_GOALS = {
-        Calories: 2500, Fat: 50, Carbs: 250, Protein: 160, Fiber: 30, Sodium: 1500, Potassium: 3500
-    };
-    
-    const COLORS = {
-        Calories: '#34495e', Fat: '#f5a623', Carbs: '#4a90e2', Protein: '#d0021b', 
-        Fiber: '#e67e22', Sodium: '#bd10e0', Potassium: '#7ed321'
-    };
+    const DAILY_GOALS = { Calories: 2500, Fat: 50, Carbs: 250, Protein: 160, Fiber: 30, Sodium: 1500, Potassium: 3500 };
+    const COLORS = { Calories: '#34495e', Fat: '#f5a623', Carbs: '#4a90e2', Protein: '#d0021b', Fiber: '#e67e22', Sodium: '#bd10e0', Potassium: '#7ed321' };
 
     let foodDatabase = {};
     let currentTotals = { Calories: 0, Fat: 0, Carbs: 0, Protein: 0, Fiber: 0, Sodium: 0, Potassium: 0 };
+    let foodQueue = [];
 
     // --- INITIALIZATION ---
     async function init() {
@@ -70,41 +81,51 @@
             if (token) localStorage.setItem('gh_pat', token);
         }
         
-        renderCircles(); // Render with zeros initially
+        renderCircles(); 
         
-        // Fetch today's data if it exists
         document.getElementById('status').innerText = 'Loading today\'s log...';
         await fetchTodaysLog();
-        document.getElementById('status').innerText = '';
     }
 
     async function loadCSV() {
         try {
-            const response = await fetch('foods.csv');
+            const response = await fetch(`foods.csv?t=${new Date().getTime()}`);
             const text = await response.text();
             const lines = text.split('\n').filter(line => line.trim() !== '');
 
             const select = document.getElementById('food-select');
+            let foodNames = []; // Array to hold names for sorting
+
+            // Start at index 1 to skip the CSV header row
             for (let i = 1; i < lines.length; i++) {
                 const data = lines[i].split(',');
                 if (data.length < 8) continue; 
                 
                 const foodName = data[0].trim();
+                foodNames.push(foodName);
+                
                 foodDatabase[foodName] = {
-                    Calories: parseFloat(data[1]),
-                    Fat: parseFloat(data[2]),
+                    Calories: parseFloat(data[1]), 
+                    Fat: parseFloat(data[2]), 
                     Carbs: parseFloat(data[3]),
-                    Protein: parseFloat(data[4]),
-                    Fiber: parseFloat(data[5]),
-                    Sodium: parseFloat(data[6]),
+                    Protein: parseFloat(data[4]), 
+                    Fiber: parseFloat(data[5]), 
+                    Sodium: parseFloat(data[6]), 
                     Potassium: parseFloat(data[7])
                 };
-                
-                const option = document.createElement('option');
-                option.value = foodName;
-                option.textContent = foodName;
-                select.appendChild(option);
             }
+            
+            // Sort the array of names alphabetically
+            foodNames.sort((a, b) => a.localeCompare(b));
+            
+            // Create and append the options in the sorted order
+            foodNames.forEach(name => {
+                const option = document.createElement('option');
+                option.value = name;
+                option.textContent = name;
+                select.appendChild(option);
+            });
+
         } catch (err) {
             document.getElementById('status').innerText = 'Failed to load foods.csv';
         }
@@ -134,35 +155,53 @@
         });
     }
 
+    // --- QUEUE LOGIC ---
+    function addToQueue() {
+        const select = document.getElementById('food-select');
+        const foodName = select.value;
+        if (!foodName) return;
+        
+        foodQueue.push(foodName);
+        renderQueue();
+        select.value = ''; // Reset dropdown
+    }
+
+    function removeFromQueue(index) {
+        foodQueue.splice(index, 1);
+        renderQueue();
+    }
+
+    function renderQueue() {
+        const list = document.getElementById('queue-list');
+        list.innerHTML = '';
+        foodQueue.forEach((food, index) => {
+            list.innerHTML += `<li>${food} <button class="btn-remove" onclick="removeFromQueue(${index})">×</button></li>`;
+        });
+        document.getElementById('submit-btn').disabled = foodQueue.length === 0;
+    }
+
     // --- FETCH EXISTING DATA ---
     async function fetchTodaysLog() {
         const token = localStorage.getItem('gh_pat');
         if (!token) return;
 
         const date = new Date();
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        const path = `${year}/${month}/${day}.txt`;
-        
-        // Add a timestamp query parameter to bypass browser caching
+        const path = `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}.txt`;
         const apiUrl = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${path}?t=${new Date().getTime()}`;
+
+        // Reset totals before recalculating from file
+        Object.keys(currentTotals).forEach(k => currentTotals[k] = 0);
 
         try {
             const getRes = await fetch(apiUrl, {
-                headers: { 
-                    'Authorization': `token ${token}`,
-                    'Accept': 'application/vnd.github.v3+json'
-                },
-                cache: 'no-store' // Force a fresh request
+                headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' },
+                cache: 'no-store'
             });
 
             if (getRes.ok) {
                 const fileData = await getRes.json();
                 const content = decodeURIComponent(escape(atob(fileData.content)));
                 const lines = content.split('\n');
-
-                // More flexible regex to catch variations in spacing
                 const regex = /Cal:\s*([\d.]+),\s*Fat:\s*([\d.]+)g,\s*Carbs:\s*([\d.]+)g,\s*Pro:\s*([\d.]+)g,\s*Fiber:\s*([\d.]+)g,\s*Na:\s*([\d.]+)mg,\s*K:\s*([\d.]+)mg/i;
 
                 let entriesFound = 0;
@@ -181,45 +220,35 @@
                 });
                 
                 renderCircles(); 
-                document.getElementById('status').innerText = `Loaded ${entriesFound} entries for today.`;
-                setTimeout(() => { if(document.getElementById('status').innerText.includes('Loaded')) document.getElementById('status').innerText = ''; }, 3000);
-                
+                setStatus(`Loaded ${entriesFound} entries for today.`);
             } else if (getRes.status === 404) {
-                 document.getElementById('status').innerText = 'No log for today yet. Starting fresh!';
-                 setTimeout(() => { if(document.getElementById('status').innerText.includes('Starting fresh')) document.getElementById('status').innerText = ''; }, 3000);
-            } else {
-                 throw new Error('API returned ' + getRes.status);
+                 renderCircles(); 
+                 setStatus('No log for today yet. Starting fresh!');
             }
         } catch (error) {
-            console.error("Error fetching today's log:", error);
-            document.getElementById('status').innerText = 'Could not load existing log.';
+            setStatus('Could not load existing log.');
         }
     }
 
-
     // --- GITHUB API INTEGRATION ---
     async function submitFood() {
-        const select = document.getElementById('food-select');
-        const foodName = select.value;
-        if (!foodName) return;
+        if (foodQueue.length === 0) return;
 
         const btn = document.getElementById('submit-btn');
-        const status = document.getElementById('status');
+        const undoBtn = document.getElementById('undo-btn');
         btn.disabled = true;
-        status.innerText = 'Syncing with GitHub...';
-
-        const macros = foodDatabase[foodName];
-        Object.keys(macros).forEach(k => currentTotals[k] += macros[k]);
-        renderCircles();
+        undoBtn.disabled = true;
+        setStatus('Syncing with GitHub...');
 
         const date = new Date();
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
         const time = date.toLocaleTimeString();
-        const path = `${year}/${month}/${day}.txt`;
-
-        const logEntry = `[${time}] ${foodName} - Cal:${macros.Calories}, Fat:${macros.Fat}g, Carbs:${macros.Carbs}g, Pro:${macros.Protein}g, Fiber:${macros.Fiber}g, Na:${macros.Sodium}mg, K:${macros.Potassium}mg\n`;
+        const path = `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}.txt`;
+        
+        let logEntries = "";
+        foodQueue.forEach(foodName => {
+            const m = foodDatabase[foodName];
+            logEntries += `[${time}] ${foodName} - Cal:${m.Calories}, Fat:${m.Fat}g, Carbs:${m.Carbs}g, Pro:${m.Protein}g, Fiber:${m.Fiber}g, Na:${m.Sodium}mg, K:${m.Potassium}mg\n`;
+        });
         
         const token = localStorage.getItem('gh_pat');
         const apiUrl = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${path}`;
@@ -227,9 +256,7 @@
         try {
             let fileSha = null;
             let existingContent = "";
-            const getRes = await fetch(apiUrl, {
-                headers: { 'Authorization': `token ${token}` }
-            });
+            const getRes = await fetch(apiUrl, { headers: { 'Authorization': `token ${token}` }, cache: 'no-store' });
 
             if (getRes.ok) {
                 const fileData = await getRes.json();
@@ -237,37 +264,87 @@
                 existingContent = decodeURIComponent(escape(atob(fileData.content))); 
             }
 
-            const newContent = existingContent + logEntry;
+            const newContent = existingContent + logEntries;
             const encodedContent = btoa(unescape(encodeURIComponent(newContent)));
 
-            const body = {
-                message: `Logged ${foodName}`,
-                content: encodedContent
-            };
+            const body = { message: `Logged ${foodQueue.length} items`, content: encodedContent };
             if (fileSha) body.sha = fileSha;
 
             const putRes = await fetch(apiUrl, {
                 method: 'PUT',
-                headers: {
-                    'Authorization': `token ${token}`,
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
                 body: JSON.stringify(body)
             });
 
             if (putRes.ok) {
-                status.innerText = 'Successfully logged!';
+                setStatus('Successfully logged!');
+                foodQueue = []; // Clear queue
+                renderQueue();
+                await fetchTodaysLog(); // Re-sync totals from the file directly
             } else {
                 throw new Error('Failed to commit');
             }
         } catch (error) {
-            status.innerText = 'Error syncing to GitHub. Check PAT.';
-            console.error(error);
+            setStatus('Error syncing to GitHub.');
         } finally {
             btn.disabled = false;
-            select.value = '';
-            setTimeout(() => { if(status.innerText === 'Successfully logged!') status.innerText = ''; }, 3000);
+            undoBtn.disabled = false;
         }
+    }
+
+    async function undoLastLog() {
+        const btn = document.getElementById('submit-btn');
+        const undoBtn = document.getElementById('undo-btn');
+        btn.disabled = true;
+        undoBtn.disabled = true;
+        setStatus('Undoing last entry...');
+
+        const date = new Date();
+        const path = `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}.txt`;
+        const token = localStorage.getItem('gh_pat');
+        const apiUrl = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${path}`;
+
+        try {
+            const getRes = await fetch(apiUrl, { headers: { 'Authorization': `token ${token}` }, cache: 'no-store' });
+            if (!getRes.ok) throw new Error('File not found or error fetching.');
+
+            const fileData = await getRes.json();
+            const content = decodeURIComponent(escape(atob(fileData.content)));
+            let lines = content.split('\n');
+            
+            // Remove trailing empty lines, then remove the last actual log entry
+            while(lines.length > 0 && lines[lines.length - 1].trim() === '') { lines.pop(); }
+            if(lines.length === 0) { setStatus('Nothing to undo.'); return; }
+            lines.pop(); // Remove the last line
+            
+            // Re-add the newline at the end if there are still lines left
+            const newContent = lines.length > 0 ? lines.join('\n') + '\n' : '';
+            const encodedContent = btoa(unescape(encodeURIComponent(newContent)));
+
+            const putRes = await fetch(apiUrl, {
+                method: 'PUT',
+                headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: `Undo last log`, content: encodedContent, sha: fileData.sha })
+            });
+
+            if (putRes.ok) {
+                setStatus('Undo successful!');
+                await fetchTodaysLog(); // Recalculate totals
+            } else {
+                throw new Error('Failed to update file.');
+            }
+        } catch (error) {
+            setStatus('Error undoing log.');
+        } finally {
+            btn.disabled = false;
+            undoBtn.disabled = false;
+        }
+    }
+
+    function setStatus(msg) {
+        const el = document.getElementById('status');
+        el.innerText = msg;
+        setTimeout(() => { if(el.innerText === msg) el.innerText = ''; }, 3000);
     }
 
     init();
