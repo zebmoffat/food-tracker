@@ -4,3 +4,4 @@
 [9:01:52 PM] Milk (Skim) - Cal:90, Fat:0g, Carbs:14g, Pro:9g, Fiber:0g, Na:140mg, K:441mg
 [9:02:11 PM] Protein Powder - Cal:130, Fat:2g, Carbs:4g, Pro:25g, Fiber:0g, Na:140mg, K:210mg
 [10:01:47 PM] Turkey - Cal:925, Fat:54g, Carbs:14g, Pro:83g, Fiber:1g, Na:447mg, K:1361mg
+[10:02:29 PM] Flax Seed - Cal:100, Fat:7g, Carbs:5g, Pro:4g, Fiber:4g, Na:10mg, K:130mg
