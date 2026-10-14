@@ -29,7 +29,6 @@
     button { padding: 12px; font-size: 16px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; }
     .btn-add { background: #28a745; color: white; }
     .btn-submit { background: #007bff; color: white; width: 100%; }
-    .btn-undo { background: #dc3545; color: white; width: 100%; margin-top: 5px; }
     button:disabled { background: #aaa; cursor: not-allowed; }
     
     #queue-list { list-style: none; padding: 0; margin: 0; text-align: left; }
@@ -37,6 +36,13 @@
     .btn-remove { background: #ff4d4d; color: white; border: none; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; font-size: 14px; }
     
     #status { margin-top: 10px; font-size: 14px; color: #666; min-height: 20px;}
+
+    /* Styles for the daily log display */
+    .log-container { margin-top: 30px; max-width: 350px; margin-left: auto; margin-right: auto; text-align: left; }
+    .log-container h3 { font-size: 18px; color: #333; border-bottom: 2px solid #ddd; padding-bottom: 8px; margin-bottom: 10px; }
+    #daily-log-list { list-style: none; padding: 0; margin: 0; font-size: 14px; color: #444; }
+    #daily-log-list li { padding: 8px 0; border-bottom: 1px solid #eee; }
+    #daily-log-list li:last-child { border-bottom: none; }
 </style>
 </head>
 <body>
@@ -56,15 +62,20 @@
     <ul id="queue-list"></ul>
     
     <button class="btn-submit" id="submit-btn" onclick="submitFood()" disabled>Log Food</button>
-    
-    <button class="btn-undo" id="undo-btn" onclick="undoLastLog()">Undo Last Log</button>
     <div id="status"></div>
+</div>
+
+<div class="log-container">
+    <h3>Today's Log</h3>
+    <ul id="daily-log-list">
+        <!-- Logged items injected via JS -->
+    </ul>
 </div>
 
 <script>
     // --- CONFIGURATION ---
-    const GITHUB_USER = 'zebmoffat';
-    const GITHUB_REPO = 'food-tracker';
+    const GITHUB_USER = 'YOUR_GITHUB_USERNAME'; // Update this
+    const GITHUB_REPO = 'YOUR_REPO_NAME';       // Update this
     
     const TRACKING_ORDER = ['Calories', 'Fat', 'Carbs', 'Protein', 'Fiber', 'Sodium', 'Potassium'];
     const DAILY_GOALS = { Calories: 2500, Fat: 50, Carbs: 250, Protein: 160, Fiber: 30, Sodium: 1500, Potassium: 3500 };
@@ -96,9 +107,8 @@
             const lines = text.split('\n').filter(line => line.trim() !== '');
 
             const select = document.getElementById('food-select');
-            let foodNames = []; // Array to hold names for sorting
+            let foodNames = []; 
 
-            // Start at index 1 to skip the CSV header row
             for (let i = 1; i < lines.length; i++) {
                 const data = lines[i].split(',');
                 if (data.length < 8) continue; 
@@ -107,20 +117,13 @@
                 foodNames.push(foodName);
                 
                 foodDatabase[foodName] = {
-                    Calories: parseFloat(data[1]), 
-                    Fat: parseFloat(data[2]), 
-                    Carbs: parseFloat(data[3]),
-                    Protein: parseFloat(data[4]), 
-                    Fiber: parseFloat(data[5]), 
-                    Sodium: parseFloat(data[6]), 
-                    Potassium: parseFloat(data[7])
+                    Calories: parseFloat(data[1]), Fat: parseFloat(data[2]), Carbs: parseFloat(data[3]),
+                    Protein: parseFloat(data[4]), Fiber: parseFloat(data[5]), Sodium: parseFloat(data[6]), Potassium: parseFloat(data[7])
                 };
             }
             
-            // Sort the array of names alphabetically
             foodNames.sort((a, b) => a.localeCompare(b));
             
-            // Create and append the options in the sorted order
             foodNames.forEach(name => {
                 const option = document.createElement('option');
                 option.value = name;
@@ -165,7 +168,7 @@
         
         foodQueue.push(foodName);
         renderQueue();
-        select.value = ''; // Reset dropdown
+        select.value = ''; 
     }
 
     function removeFromQueue(index) {
@@ -191,8 +194,10 @@
         const path = `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}.txt`;
         const apiUrl = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${path}?t=${new Date().getTime()}`;
 
-        // Reset totals before recalculating from file
         Object.keys(currentTotals).forEach(k => currentTotals[k] = 0);
+        
+        const displayList = document.getElementById('daily-log-list');
+        displayList.innerHTML = ''; 
 
         try {
             const getRes = await fetch(apiUrl, {
@@ -217,17 +222,27 @@
                         currentTotals.Fiber += parseFloat(match[5]);
                         currentTotals.Sodium += parseFloat(match[6]);
                         currentTotals.Potassium += parseFloat(match[7]);
+                        
+                        const displayText = line.split('- Cal:')[0].trim();
+                        displayList.innerHTML += `<li>${displayText}</li>`;
+                        
                         entriesFound++;
                     }
                 });
                 
+                if (entriesFound === 0) {
+                    displayList.innerHTML = '<li>No foods logged yet.</li>';
+                }
+                
                 renderCircles(); 
                 setStatus(`Loaded ${entriesFound} entries for today.`);
             } else if (getRes.status === 404) {
+                 displayList.innerHTML = '<li>No foods logged yet.</li>';
                  renderCircles(); 
                  setStatus('No log for today yet. Starting fresh!');
             }
         } catch (error) {
+            displayList.innerHTML = '<li>Error loading log.</li>';
             setStatus('Could not load existing log.');
         }
     }
@@ -237,9 +252,7 @@
         if (foodQueue.length === 0) return;
 
         const btn = document.getElementById('submit-btn');
-        const undoBtn = document.getElementById('undo-btn');
         btn.disabled = true;
-        undoBtn.disabled = true;
         setStatus('Syncing with GitHub...');
 
         const date = new Date();
@@ -280,9 +293,9 @@
 
             if (putRes.ok) {
                 setStatus('Successfully logged!');
-                foodQueue = []; // Clear queue
+                foodQueue = []; 
                 renderQueue();
-                await fetchTodaysLog(); // Re-sync totals from the file directly
+                await fetchTodaysLog(); 
             } else {
                 throw new Error('Failed to commit');
             }
@@ -290,56 +303,6 @@
             setStatus('Error syncing to GitHub.');
         } finally {
             btn.disabled = false;
-            undoBtn.disabled = false;
-        }
-    }
-
-    async function undoLastLog() {
-        const btn = document.getElementById('submit-btn');
-        const undoBtn = document.getElementById('undo-btn');
-        btn.disabled = true;
-        undoBtn.disabled = true;
-        setStatus('Undoing last entry...');
-
-        const date = new Date();
-        const path = `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}.txt`;
-        const token = localStorage.getItem('gh_pat');
-        const apiUrl = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${path}`;
-
-        try {
-            const getRes = await fetch(apiUrl, { headers: { 'Authorization': `token ${token}` }, cache: 'no-store' });
-            if (!getRes.ok) throw new Error('File not found or error fetching.');
-
-            const fileData = await getRes.json();
-            const content = decodeURIComponent(escape(atob(fileData.content)));
-            let lines = content.split('\n');
-            
-            // Remove trailing empty lines, then remove the last actual log entry
-            while(lines.length > 0 && lines[lines.length - 1].trim() === '') { lines.pop(); }
-            if(lines.length === 0) { setStatus('Nothing to undo.'); return; }
-            lines.pop(); // Remove the last line
-            
-            // Re-add the newline at the end if there are still lines left
-            const newContent = lines.length > 0 ? lines.join('\n') + '\n' : '';
-            const encodedContent = btoa(unescape(encodeURIComponent(newContent)));
-
-            const putRes = await fetch(apiUrl, {
-                method: 'PUT',
-                headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: `Undo last log`, content: encodedContent, sha: fileData.sha })
-            });
-
-            if (putRes.ok) {
-                setStatus('Undo successful!');
-                await fetchTodaysLog(); // Recalculate totals
-            } else {
-                throw new Error('Failed to update file.');
-            }
-        } catch (error) {
-            setStatus('Error undoing log.');
-        } finally {
-            btn.disabled = false;
-            undoBtn.disabled = false;
         }
     }
 
