@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Macro & Micro Tracker</title>
+<style>
+    body { font-family: -apple-system, sans-serif; padding: 20px; background: #f9f9f9; text-align: center; }
+    .dashboard { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; margin-bottom: 30px; }
+    .circle-wrap { display: flex; flex-direction: column; align-items: center; }
+    .circle {
+        width: 100px; height: 100px; border-radius: 50%;
+        background: conic-gradient(var(--color) calc(var(--percent) * 1%), #e0e0e0 0);
+        display: flex; align-items: center; justify-content: center;
+        margin-bottom: 10px; transition: background 0.3s;
+    }
+    .circle.over { background: conic-gradient(#ff4d4d calc(var(--percent) * 1%), #e0e0e0 0); }
+    .circle-inner {
+        width: 80px; height: 80px; background: #fff; border-radius: 50%;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+    }
+    .circle-inner span { font-size: 12px; color: #555; }
+    .circle-inner strong { font-size: 16px; }
+    .controls { display: flex; flex-direction: column; gap: 15px; max-width: 300px; margin: 0 auto; }
+    select, button { padding: 12px; font-size: 16px; border-radius: 8px; border: 1px solid #ccc; }
+    button { background: #007bff; color: white; border: none; font-weight: bold; }
+    button:disabled { background: #aaa; }
+    #status { margin-top: 15px; font-size: 14px; color: #666; }
+</style>
+</head>
+<body>
+
+<div class="dashboard" id="dashboard">
+    <!-- Circles injected via JS -->
+</div>
+
+<div class="controls">
+    <select id="food-select">
+        <option value="">Select a food...</option>
+    </select>
+    <button id="submit-btn" onclick="submitFood()">Log Food</button>
+    <div id="status"></div>
+</div>
+
+<script>
+    // --- CONFIGURATION ---
+    const GITHUB_USER = 'YOUR_GITHUB_USERNAME'; 
+    const GITHUB_REPO = 'YOUR_REPO_NAME';       
+    
+    const TRACKING_ORDER = ['Calories', 'Fat', 'Carbs', 'Protein', 'Fiber', 'Sodium', 'Potassium'];
+    
+    const DAILY_GOALS = {
+        Calories: 2300, Fat: 100, Carbs: 200, Protein: 150, Fiber: 40, Sodium: 2500, Potassium: 4000
+    };
+    
+    const COLORS = {
+        Calories: '#34495e', Fat: '#f5a623', Carbs: '#4a90e2', Protein: '#d0021b', 
+        Fiber: '#e67e22', Sodium: '#bd10e0', Potassium: '#7ed321'
+    };
+
+    let foodDatabase = {};
+    let currentTotals = { Calories: 0, Fat: 0, Carbs: 0, Protein: 0, Fiber: 0, Sodium: 0, Potassium: 0 };
+
+    // --- INITIALIZATION ---
+    async function init() {
+        await loadCSV();
+        renderCircles();
+        
+        if (!localStorage.getItem('gh_pat')) {
+            const token = prompt("Enter your GitHub Personal Access Token (PAT) with repo scope:");
+            if (token) localStorage.setItem('gh_pat', token);
+        }
+    }
+
+    async function loadCSV() {
+        try {
+            const response = await fetch('foods.csv');
+            const text = await response.text();
+            const lines = text.split('\n').filter(line => line.trim() !== '');
+
+            const select = document.getElementById('food-select');
+            for (let i = 1; i < lines.length; i++) {
+                const data = lines[i].split(',');
+                if (data.length < 8) continue; 
+                
+                const foodName = data[0].trim();
+                foodDatabase[foodName] = {
+                    Calories: parseFloat(data[1]),
+                    Fat: parseFloat(data[2]),
+                    Carbs: parseFloat(data[3]),
+                    Protein: parseFloat(data[4]),
+                    Fiber: parseFloat(data[5]),
+                    Sodium: parseFloat(data[6]),
+                    Potassium: parseFloat(data[7])
+                };
+                
+                const option = document.createElement('option');
+                option.value = foodName;
+                option.textContent = foodName;
+                select.appendChild(option);
+            }
+        } catch (err) {
+            document.getElementById('status').innerText = 'Failed to load foods.csv';
+        }
+    }
+
+    function renderCircles() {
+        const dash = document.getElementById('dashboard');
+        dash.innerHTML = '';
+        
+        TRACKING_ORDER.forEach(macro => {
+            const val = currentTotals[macro];
+            const goal = DAILY_GOALS[macro];
+            const percent = Math.min((val / goal) * 100, 100);
+            const isOver = val > goal;
+            
+            dash.innerHTML += `
+                <div class="circle-wrap">
+                    <div class="circle ${isOver ? 'over' : ''}" style="--percent: ${percent}; --color: ${COLORS[macro]}">
+                        <div class="circle-inner">
+                            <strong>${val.toFixed(1)}</strong>
+                            <span>/ ${goal}</span>
+                        </div>
+                    </div>
+                    <span>${macro}</span>
+                </div>
+            `;
+        });
+    }
+
+    // --- GITHUB API INTEGRATION ---
+    async function submitFood() {
+        const select = document.getElementById('food-select');
+        const foodName = select.value;
+        if (!foodName) return;
+
+        const btn = document.getElementById('submit-btn');
+        const status = document.getElementById('status');
+        btn.disabled = true;
+        status.innerText = 'Syncing with GitHub...';
+
+        const macros = foodDatabase[foodName];
+        Object.keys(macros).forEach(k => currentTotals[k] += macros[k]);
+        renderCircles();
+
+        const date = new Date();
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const time = date.toLocaleTimeString();
+        const path = `${year}/${month}/${day}.txt`;
+
+        const logEntry = `[${time}] ${foodName} - Cal:${macros.Calories}, Fat:${macros.Fat}g, Carbs:${macros.Carbs}g, Pro:${macros.Protein}g, Fiber:${macros.Fiber}g, Na:${macros.Sodium}mg, K:${macros.Potassium}mg\n`;
+        
+        const token = localStorage.getItem('gh_pat');
+        const apiUrl = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${path}`;
+
+        try {
+            let fileSha = null;
+            let existingContent = "";
+            const getRes = await fetch(apiUrl, {
+                headers: { 'Authorization': `token ${token}` }
+            });
+
+            if (getRes.ok) {
+                const fileData = await getRes.json();
+                fileSha = fileData.sha;
+                existingContent = decodeURIComponent(escape(atob(fileData.content))); 
+            }
+
+            const newContent = existingContent + logEntry;
+            const encodedContent = btoa(unescape(encodeURIComponent(newContent)));
+
+            const body = {
+                message: `Logged ${foodName}`,
+                content: encodedContent
+            };
+            if (fileSha) body.sha = fileSha;
+
+            const putRes = await fetch(apiUrl, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `token ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(body)
+            });
+
+            if (putRes.ok) {
+                status.innerText = 'Successfully logged!';
+            } else {
+                throw new Error('Failed to commit');
+            }
+        } catch (error) {
+            status.innerText = 'Error syncing to GitHub. Check PAT.';
+            console.error(error);
+        } finally {
+            btn.disabled = false;
+            select.value = '';
+            setTimeout(() => { if(status.innerText === 'Successfully logged!') status.innerText = ''; }, 3000);
+        }
+    }
+
+    init();
+</script>
+</body>
+</html>
