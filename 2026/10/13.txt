@@ -1,3 +1,5 @@
 [8:50:53 PM] Flax Seed - Cal:100, Fat:6g, Carbs:4g, Pro:3g, Fiber:4g, Na:2mg, K:160mg
 [8:56:03 PM] Milk (Skim) - Cal:90, Fat:0g, Carbs:14g, Pro:9g, Fiber:0g, Na:140mg, K:441mg
 [8:56:03 PM] Protein Powder - Cal:130, Fat:2g, Carbs:4g, Pro:25g, Fiber:0g, Na:140mg, K:210mg
+[9:01:52 PM] Milk (Skim) - Cal:90, Fat:0g, Carbs:14g, Pro:9g, Fiber:0g, Na:140mg, K:441mg
+[9:02:11 PM] Protein Powder - Cal:130, Fat:2g, Carbs:4g, Pro:25g, Fiber:0g, Na:140mg, K:210mg
