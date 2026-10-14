@@ -212,6 +212,8 @@
                 const regex = /Cal:\s*([\d.]+),\s*Fat:\s*([\d.]+)g,\s*Carbs:\s*([\d.]+)g,\s*Pro:\s*([\d.]+)g,\s*Fiber:\s*([\d.]+)g,\s*Na:\s*([\d.]+)mg,\s*K:\s*([\d.]+)mg/i;
 
                 let entriesFound = 0;
+                let timeColors = {}; // Store time-to-color mapping
+
                 lines.forEach(line => {
                     const match = line.match(regex);
                     if (match) {
@@ -224,7 +226,21 @@
                         currentTotals.Potassium += parseFloat(match[7]);
                         
                         const displayText = line.split('- Cal:')[0].trim();
-                        displayList.innerHTML += `<li>${displayText}</li>`;
+
+                        // Extract the time from the [time] bracket
+                        let bgColorStyle = '';
+                        const timeMatch = displayText.match(/^\[(.*?)\]/);
+                        if (timeMatch) {
+                            const timeStr = timeMatch[1];
+                            if (!timeColors[timeStr]) {
+                                // Generate a random pastel color for readability
+                                const hue = Math.floor(Math.random() * 360);
+                                timeColors[timeStr] = `hsl(${hue}, 70%, 85%)`;
+                            }
+                            bgColorStyle = `style="background-color: ${timeColors[timeStr]};"`;
+                        }
+                        
+                        displayList.innerHTML += `<li ${bgColorStyle}>${displayText}</li>`;
                         
                         entriesFound++;
                     }
