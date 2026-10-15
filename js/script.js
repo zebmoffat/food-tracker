@@ -77,7 +77,11 @@ function promptForPat() {
       location.reload(); // Refreshes to reveal the controls
     }
   } else {
-    if (confirm("You are already logged in. Do you want to log out and hide the controls?")) {
+    if (
+      confirm(
+        "You are already logged in. Do you want to log out and hide the controls?",
+      )
+    ) {
       localStorage.removeItem("gh_pat");
       location.reload();
     }
@@ -512,8 +516,14 @@ async function submitFood() {
 function setStatus(msg) {
   const el = document.getElementById("status");
   el.innerText = msg;
+  el.style.display = "block"; // Reveal the element and take up space
+
   setTimeout(() => {
-    if (el.innerText === msg) el.innerText = "";
+    // Only clear and hide if a new message hasn't overwritten this one
+    if (el.innerText === msg) {
+      el.innerText = "";
+      el.style.display = "none"; // Completely hide the element to collapse the gap
+    }
   }, 3000);
 }
 
