@@ -47,7 +47,7 @@ let foodQueue = [];
 async function init() {
   if (!localStorage.getItem("gh_pat")) {
     const token = prompt(
-      "Enter your GitHub Personal Access Token (PAT) with repo scope:"
+      "Enter your GitHub Personal Access Token (PAT) with repo scope:",
     );
     if (token) localStorage.setItem("gh_pat", token);
   }
@@ -84,8 +84,7 @@ async function loadCategories() {
     files.forEach((file) => {
       if (file.name.endsWith(".csv")) {
         const rawName = file.name.replace(".csv", "");
-        const capName =
-          rawName.charAt(0).toUpperCase() + rawName.slice(1);
+        const capName = rawName.charAt(0).toUpperCase() + rawName.slice(1);
 
         // Store the local file name instead of the raw download URL to prevent CORS issues
         categoryMap[capName] = file.name;
@@ -154,14 +153,14 @@ function onFoodChange() {
   const btnAdd = document.getElementById("btn-add");
 
   // Disable the Add button if the value is empty ("Select a food...")
-  btnAdd.disabled = (foodSelect.value === "");
+  btnAdd.disabled = foodSelect.value === "";
 }
 
 async function loadCSV(fileName) {
   try {
     // Fetch directly from your own GitHub Pages domain using the relative file name
     const response = await fetch(
-      `categories/${fileName}?t=${new Date().getTime()}`
+      `categories/${fileName}?t=${new Date().getTime()}`,
     );
 
     if (!response.ok) throw new Error("Failed to download CSV");
@@ -209,15 +208,21 @@ function renderCircles() {
   const dash = document.getElementById("dashboard");
   dash.innerHTML = "";
 
+  const targetPercents = {};
+
   TRACKING_ORDER.forEach((macro) => {
     const val = currentTotals[macro];
     const goal = DAILY_GOALS[macro];
     const percent = Math.min((val / goal) * 100, 100);
     const isOver = val > goal;
 
+    // Store target for the animation loop
+    targetPercents[macro] = percent;
+
+    // Inject with --percent: 0 and unique IDs to target in the loop
     dash.innerHTML += `
           <div class="circle-wrap">
-              <div class="circle ${isOver ? "over" : ""}" style="--percent: ${percent}; --color: ${COLORS[macro]}">
+              <div class="circle ${isOver ? "over" : ""}" id="circle-${macro}" style="--percent: 0; --color: ${COLORS[macro]}">
                   <div class="circle-inner">
                       <strong>${val.toFixed(1)}</strong>
                       <span>/ ${goal}</span>
@@ -227,6 +232,34 @@ function renderCircles() {
           </div>
       `;
   });
+
+  // Animate the circles filling up
+  let startTimestamp = null;
+  const duration = 800; // Animation duration in milliseconds
+
+  function animate(timestamp) {
+    if (!startTimestamp) startTimestamp = timestamp;
+    const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+
+    // easeOutQuart for a smooth deceleration as it hits the target
+    const easeProgress = 1 - Math.pow(1 - progress, 4);
+
+    TRACKING_ORDER.forEach((macro) => {
+      const circleEl = document.getElementById(`circle-${macro}`);
+      if (circleEl) {
+        circleEl.style.setProperty(
+          "--percent",
+          targetPercents[macro] * easeProgress,
+        );
+      }
+    });
+
+    if (progress < 1) {
+      requestAnimationFrame(animate);
+    }
+  }
+
+  requestAnimationFrame(animate);
 }
 
 // --- QUEUE LOGIC ---
@@ -246,17 +279,13 @@ function addToQueue() {
     const dbKey = `${foodName} (Custom)`;
 
     foodDatabase[dbKey] = {
-      Calories:
-        parseFloat(document.getElementById("custom-cal").value) || 0,
+      Calories: parseFloat(document.getElementById("custom-cal").value) || 0,
       Fat: parseFloat(document.getElementById("custom-fat").value) || 0,
-      Carbs:
-        parseFloat(document.getElementById("custom-carbs").value) || 0,
-      Protein:
-        parseFloat(document.getElementById("custom-pro").value) || 0,
+      Carbs: parseFloat(document.getElementById("custom-carbs").value) || 0,
+      Protein: parseFloat(document.getElementById("custom-pro").value) || 0,
       Fiber: parseFloat(document.getElementById("custom-fib").value) || 0,
       Sodium: parseFloat(document.getElementById("custom-na").value) || 0,
-      Potassium:
-        parseFloat(document.getElementById("custom-k").value) || 0,
+      Potassium: parseFloat(document.getElementById("custom-k").value) || 0,
     };
 
     foodName = dbKey;
@@ -342,15 +371,15 @@ async function fetchTodaysLog() {
 
           let bgColorStyle = "";
           let timeValue = 0;
-          
+
           // Extract time from the brackets [e.g., 2:30:15 PM]
           const timeMatch = displayText.match(/^\[(.*?)\]/);
           if (timeMatch) {
             const timeStr = timeMatch[1];
-            
+
             // Parse time string into a valid timestamp for accurate AM/PM sorting
             timeValue = new Date(`1970/01/01 ${timeStr}`).getTime();
-            
+
             if (!timeColors[timeStr]) {
               const hue = Math.floor(Math.random() * 360);
               timeColors[timeStr] = `hsl(${hue}, 70%, 85%)`;
@@ -361,7 +390,7 @@ async function fetchTodaysLog() {
           // Push object into array instead of directly modifying DOM
           logItems.push({
             timeValue: timeValue,
-            html: `<li ${bgColorStyle}>${displayText}</li>`
+            html: `<li ${bgColorStyle}>${displayText}</li>`,
           });
 
           entriesFound++;
@@ -373,7 +402,7 @@ async function fetchTodaysLog() {
       } else {
         // Sort the array descending (newest timeValue first) and join into DOM
         logItems.sort((a, b) => b.timeValue - a.timeValue);
-        displayList.innerHTML = logItems.map(item => item.html).join("");
+        displayList.innerHTML = logItems.map((item) => item.html).join("");
       }
 
       renderCircles();
@@ -421,9 +450,7 @@ async function submitFood() {
     if (getRes.ok) {
       const fileData = await getRes.json();
       fileSha = fileData.sha;
-      existingContent = decodeURIComponent(
-        escape(atob(fileData.content))
-      );
+      existingContent = decodeURIComponent(escape(atob(fileData.content)));
     }
 
     const newContent = existingContent + logEntries;
