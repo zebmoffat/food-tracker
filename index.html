@@ -77,7 +77,8 @@
         display: flex;
         gap: 10px;
       }
-      select, .custom-inputs input {
+      select,
+      .custom-inputs input {
         flex-grow: 1;
         padding: 12px;
         font-size: 16px;
@@ -123,7 +124,8 @@
         color: white;
         width: 100%;
       }
-      button:disabled, select:disabled {
+      button:disabled,
+      select:disabled {
         background: #aaa;
         cursor: not-allowed;
       }
@@ -217,7 +219,9 @@
           <select id="food-select" disabled>
             <option value="">Select a food...</option>
           </select>
-          <button class="btn-add" id="btn-add" onclick="addToQueue()" disabled>Add</button>
+          <button class="btn-add" id="btn-add" onclick="addToQueue()" disabled>
+            Add
+          </button>
         </div>
 
         <!-- Custom Food Inputs -->
@@ -226,7 +230,12 @@
           <div class="custom-macros">
             <input type="number" id="custom-cal" placeholder="Cal" min="0" />
             <input type="number" id="custom-fat" placeholder="Fat" min="0" />
-            <input type="number" id="custom-carbs" placeholder="Carbs" min="0" />
+            <input
+              type="number"
+              id="custom-carbs"
+              placeholder="Carbs"
+              min="0"
+            />
             <input type="number" id="custom-pro" placeholder="Pro" min="0" />
             <input type="number" id="custom-fib" placeholder="Fib" min="0" />
             <input type="number" id="custom-na" placeholder="Na" min="0" />
@@ -311,7 +320,7 @@
         }
 
         renderCircles();
-        
+
         document.getElementById("status").innerText = "Loading categories...";
         await loadCategories();
 
@@ -324,7 +333,7 @@
         if (!token) return;
 
         const apiUrl = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/categories?t=${new Date().getTime()}`;
-        
+
         try {
           const res = await fetch(apiUrl, {
             headers: {
@@ -335,17 +344,18 @@
           });
 
           if (!res.ok) throw new Error("Could not fetch categories directory");
-          
+
           const files = await res.json();
           const select = document.getElementById("category-select");
-          
-          files.forEach(file => {
-            if (file.name.endsWith('.csv')) {
-              const rawName = file.name.replace('.csv', '');
-              const capName = rawName.charAt(0).toUpperCase() + rawName.slice(1);
-              
+
+          files.forEach((file) => {
+            if (file.name.endsWith(".csv")) {
+              const rawName = file.name.replace(".csv", "");
+              const capName =
+                rawName.charAt(0).toUpperCase() + rawName.slice(1);
+
               categoryMap[capName] = file.download_url;
-              
+
               const option = document.createElement("option");
               option.value = capName;
               option.textContent = capName;
@@ -391,13 +401,13 @@
         } else {
           foodSelect.style.display = "block";
           customInputs.style.display = "none";
-          
+
           foodSelect.disabled = true;
           btnAdd.disabled = true;
           setStatus(`Loading ${cat} foods...`);
-          
+
           await loadCSV(categoryMap[cat]);
-          
+
           foodSelect.disabled = false;
           btnAdd.disabled = false;
           setStatus(`${cat} foods loaded.`);
@@ -409,10 +419,12 @@
           const token = localStorage.getItem("gh_pat");
           // Download URL sometimes requires authentication if the repo is private
           const headers = token ? { Authorization: `token ${token}` } : {};
-          
-          const response = await fetch(downloadUrl, { headers, cache: "no-store" });
+
+          const response = await fetch(
+            `categories/${categoryFile}?t=${new Date().getTime()}`,
+          );
           if (!response.ok) throw new Error("Failed to download CSV");
-          
+
           const text = await response.text();
           const lines = text.split("\n").filter((line) => line.trim() !== "");
 
@@ -487,26 +499,32 @@
             setStatus("Please provide a name for the custom food.");
             return;
           }
-          
+
           // Generate an entry in the DB specifically for this custom food addition
           // Appending timestamp to avoid collisions if they log identically named custom items
-          const dbKey = `${foodName} (Custom)`; 
-          
+          const dbKey = `${foodName} (Custom)`;
+
           foodDatabase[dbKey] = {
-            Calories: parseFloat(document.getElementById("custom-cal").value) || 0,
+            Calories:
+              parseFloat(document.getElementById("custom-cal").value) || 0,
             Fat: parseFloat(document.getElementById("custom-fat").value) || 0,
-            Carbs: parseFloat(document.getElementById("custom-carbs").value) || 0,
-            Protein: parseFloat(document.getElementById("custom-pro").value) || 0,
+            Carbs:
+              parseFloat(document.getElementById("custom-carbs").value) || 0,
+            Protein:
+              parseFloat(document.getElementById("custom-pro").value) || 0,
             Fiber: parseFloat(document.getElementById("custom-fib").value) || 0,
             Sodium: parseFloat(document.getElementById("custom-na").value) || 0,
-            Potassium: parseFloat(document.getElementById("custom-k").value) || 0,
+            Potassium:
+              parseFloat(document.getElementById("custom-k").value) || 0,
           };
-          
+
           foodName = dbKey;
-          
+
           // Clear inputs after successful queue
           document.getElementById("custom-name").value = "";
-          document.querySelectorAll('.custom-macros input').forEach(input => input.value = "");
+          document
+            .querySelectorAll(".custom-macros input")
+            .forEach((input) => (input.value = ""));
         } else {
           const select = document.getElementById("food-select");
           foodName = select.value;
