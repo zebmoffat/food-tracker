@@ -2,3 +2,4 @@
 [11:40:45 AM] Fruit SMPP - Cal:90, Fat:0g, Carbs:21g, Pro:1g, Fiber:2g, Na:0mg, K:240mg
 [11:40:45 AM] Raw Salad Mix (1 Cup) - Cal:10, Fat:0g, Carbs:2g, Pro:0g, Fiber:1g, Na:14mg, K:120mg
 [11:42:23 AM] Salt (1/4 Tsp) - Cal:0, Fat:0g, Carbs:0g, Pro:0g, Fiber:0g, Na:590mg, K:0mg
+[1:09:16 PM] 2M + 2PP - Cal:440, Fat:4g, Carbs:36g, Pro:68g, Fiber:0g, Na:560mg, K:1302mg
