@@ -280,8 +280,8 @@
       ];
       const DAILY_GOALS = {
         Calories: 2300,
-        Fat: 100,
-        Carbs: 200,
+        Fat: 90,
+        Carbs: 222,
         Protein: 150,
         Fiber: 40,
         Sodium: 3000,
@@ -549,7 +549,6 @@
         document.getElementById("submit-btn").disabled = foodQueue.length === 0;
       }
 
-      // --- FETCH EXISTING DATA ---
       async function fetchTodaysLog() {
         const token = localStorage.getItem("gh_pat");
         if (!token) return;
@@ -581,6 +580,7 @@
 
             let entriesFound = 0;
             let timeColors = {};
+            let logItems = []; // Array to store items for sorting
 
             lines.forEach((line) => {
               const match = line.match(regex);
@@ -596,9 +596,16 @@
                 const displayText = line.split("- Cal:")[0].trim();
 
                 let bgColorStyle = "";
+                let timeValue = 0;
+                
+                // Extract time from the brackets [e.g., 2:30:15 PM]
                 const timeMatch = displayText.match(/^\[(.*?)\]/);
                 if (timeMatch) {
                   const timeStr = timeMatch[1];
+                  
+                  // Parse time string into a valid timestamp for accurate AM/PM sorting
+                  timeValue = new Date(`1970/01/01 ${timeStr}`).getTime();
+                  
                   if (!timeColors[timeStr]) {
                     const hue = Math.floor(Math.random() * 360);
                     timeColors[timeStr] = `hsl(${hue}, 70%, 85%)`;
@@ -606,7 +613,11 @@
                   bgColorStyle = `style="background-color: ${timeColors[timeStr]};"`;
                 }
 
-                displayList.innerHTML += `<li ${bgColorStyle}>${displayText}</li>`;
+                // Push object into array instead of directly modifying DOM
+                logItems.push({
+                  timeValue: timeValue,
+                  html: `<li ${bgColorStyle}>${displayText}</li>`
+                });
 
                 entriesFound++;
               }
@@ -614,6 +625,10 @@
 
             if (entriesFound === 0) {
               displayList.innerHTML = "<li>No foods logged yet.</li>";
+            } else {
+              // Sort the array descending (newest timeValue first) and join into DOM
+              logItems.sort((a, b) => b.timeValue - a.timeValue);
+              displayList.innerHTML = logItems.map(item => item.html).join("");
             }
 
             renderCircles();
