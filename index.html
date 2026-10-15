@@ -216,7 +216,7 @@
 
         <div class="add-group">
           <!-- Existing Food Select -->
-          <select id="food-select" disabled>
+          <select id="food-select" onchange="onFoodChange()" disabled>
             <option value="">Select a food...</option>
           </select>
           <button class="btn-add" id="btn-add" onclick="addToQueue()" disabled>
@@ -399,6 +399,7 @@
         if (cat === "Custom") {
           foodSelect.style.display = "none";
           customInputs.style.display = "flex";
+          btnAdd.disabled = false;
         } else {
           foodSelect.style.display = "block";
           customInputs.style.display = "none";
@@ -413,6 +414,14 @@
           btnAdd.disabled = false;
           setStatus(`${cat} foods loaded.`);
         }
+      }
+
+      function onFoodChange() {
+        const foodSelect = document.getElementById("food-select");
+        const btnAdd = document.getElementById("btn-add");
+  
+        // Disable the Add button if the value is empty ("Select a food...")
+        btnAdd.disabled = (foodSelect.value === "");
       }
 
       async function loadCSV(fileName) {
@@ -528,7 +537,10 @@
           const select = document.getElementById("food-select");
           foodName = select.value;
           if (!foodName) return;
+
           select.value = "";
+
+          document.getElementById("btn-add").disabled = true;
         }
 
         foodQueue.push(foodName);
