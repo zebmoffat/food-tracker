@@ -44,21 +44,44 @@ let currentTotals = {
 let foodQueue = [];
 
 // --- INITIALIZATION ---
+// --- INITIALIZATION ---
 async function init() {
-  if (!localStorage.getItem("gh_pat")) {
-    const token = prompt(
-      "Enter your GitHub Personal Access Token (PAT) with repo scope:",
-    );
-    if (token) localStorage.setItem("gh_pat", token);
+  const token = localStorage.getItem("gh_pat");
+  const controls = document.querySelector(".controls");
+  const statusText = document.getElementById("status");
+
+  // Hide the inputs and status message from visitors
+  if (!token) {
+    controls.style.display = "none";
+    if (statusText) statusText.style.display = "none";
   }
 
+  // Always load the visual data for everyone
   renderCircles();
 
-  document.getElementById("status").innerText = "Loading categories...";
-  await loadCategories();
+  // Only attempt to download your custom foods if logged in
+  if (token) {
+    if (statusText) statusText.innerText = "Loading categories...";
+    await loadCategories();
+  }
 
-  document.getElementById("status").innerText = "Loading today's log...";
   await fetchTodaysLog();
+}
+
+// --- SECRET LOGIN / LOGOUT FUNCTION ---
+function promptForPat() {
+  if (!localStorage.getItem("gh_pat")) {
+    const token = prompt("Enter Personal Access Token:");
+    if (token) {
+      localStorage.setItem("gh_pat", token);
+      location.reload(); // Refreshes to reveal the controls
+    }
+  } else {
+    if (confirm("You are already logged in. Do you want to log out and hide the controls?")) {
+      localStorage.removeItem("gh_pat");
+      location.reload();
+    }
+  }
 }
 
 async function loadCategories() {
@@ -325,7 +348,7 @@ function renderQueue() {
 
 async function fetchTodaysLog() {
   const token = localStorage.getItem("gh_pat");
-  if (!token) return;
+  // The 'if (!token) return;' line has been removed to allow read-only access
 
   const date = new Date();
   const path = `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, "0")}/${String(date.getDate()).padStart(2, "0")}.txt`;
@@ -336,12 +359,17 @@ async function fetchTodaysLog() {
   const displayList = document.getElementById("daily-log-list");
   displayList.innerHTML = "";
 
+  // Only include the Authorization header if a token was actually provided
+  const requestHeaders = {
+    Accept: "application/vnd.github.v3+json",
+  };
+  if (token) {
+    requestHeaders.Authorization = `token ${token}`;
+  }
+
   try {
     const getRes = await fetch(apiUrl, {
-      headers: {
-        Authorization: `token ${token}`,
-        Accept: "application/vnd.github.v3+json",
-      },
+      headers: requestHeaders,
       cache: "no-store",
     });
 
@@ -354,7 +382,7 @@ async function fetchTodaysLog() {
 
       let entriesFound = 0;
       let timeColors = {};
-      let logItems = []; // Array to store items for sorting
+      let logItems = [];
 
       lines.forEach((line) => {
         const match = line.match(regex);
@@ -372,12 +400,9 @@ async function fetchTodaysLog() {
           let bgColorStyle = "";
           let timeValue = 0;
 
-          // Extract time from the brackets [e.g., 2:30:15 PM]
           const timeMatch = displayText.match(/^\[(.*?)\]/);
           if (timeMatch) {
             const timeStr = timeMatch[1];
-
-            // Parse time string into a valid timestamp for accurate AM/PM sorting
             timeValue = new Date(`1970/01/01 ${timeStr}`).getTime();
 
             if (!timeColors[timeStr]) {
@@ -387,7 +412,6 @@ async function fetchTodaysLog() {
             bgColorStyle = `style="background-color: ${timeColors[timeStr]};"`;
           }
 
-          // Push object into array instead of directly modifying DOM
           logItems.push({
             timeValue: timeValue,
             html: `<li ${bgColorStyle}>${displayText}</li>`,
@@ -400,7 +424,6 @@ async function fetchTodaysLog() {
       if (entriesFound === 0) {
         displayList.innerHTML = "<li>No foods logged yet.</li>";
       } else {
-        // Sort the array descending (newest timeValue first) and join into DOM
         logItems.sort((a, b) => b.timeValue - a.timeValue);
         displayList.innerHTML = logItems.map((item) => item.html).join("");
       }
