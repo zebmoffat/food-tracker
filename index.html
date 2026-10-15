@@ -70,14 +70,40 @@
       }
       .input-group {
         display: flex;
+        flex-direction: column;
         gap: 10px;
       }
-      select {
+      .add-group {
+        display: flex;
+        gap: 10px;
+      }
+      select, .custom-inputs input {
         flex-grow: 1;
         padding: 12px;
         font-size: 16px;
         border-radius: 8px;
         border: 1px solid #ccc;
+        box-sizing: border-box;
+      }
+
+      /* Custom Input Styles */
+      .custom-inputs {
+        display: none; /* Hidden by default */
+        flex-direction: column;
+        gap: 10px;
+        background: #fff;
+        padding: 15px;
+        border-radius: 8px;
+        border: 1px solid #ddd;
+      }
+      .custom-macros {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+      }
+      .custom-macros input {
+        padding: 8px;
+        font-size: 14px;
       }
 
       button {
@@ -97,9 +123,13 @@
         color: white;
         width: 100%;
       }
-      button:disabled {
+      button:disabled, select:disabled {
         background: #aaa;
         cursor: not-allowed;
+      }
+      select:disabled {
+        background: #eee;
+        color: #888;
       }
 
       #queue-list {
@@ -177,10 +207,32 @@
 
     <div class="controls">
       <div class="input-group">
-        <select id="food-select">
-          <option value="">Select a food...</option>
+        <!-- New Category Select -->
+        <select id="category-select" onchange="onCategoryChange()">
+          <option value="">Select a category...</option>
         </select>
-        <button class="btn-add" onclick="addToQueue()">Add</button>
+
+        <div class="add-group">
+          <!-- Existing Food Select -->
+          <select id="food-select" disabled>
+            <option value="">Select a food...</option>
+          </select>
+          <button class="btn-add" id="btn-add" onclick="addToQueue()" disabled>Add</button>
+        </div>
+
+        <!-- Custom Food Inputs -->
+        <div id="custom-inputs" class="custom-inputs">
+          <input type="text" id="custom-name" placeholder="Custom Food Name" />
+          <div class="custom-macros">
+            <input type="number" id="custom-cal" placeholder="Cal" min="0" />
+            <input type="number" id="custom-fat" placeholder="Fat" min="0" />
+            <input type="number" id="custom-carbs" placeholder="Carbs" min="0" />
+            <input type="number" id="custom-pro" placeholder="Pro" min="0" />
+            <input type="number" id="custom-fib" placeholder="Fib" min="0" />
+            <input type="number" id="custom-na" placeholder="Na" min="0" />
+            <input type="number" id="custom-k" placeholder="K" min="0" />
+          </div>
+        </div>
       </div>
 
       <ul id="queue-list"></ul>
@@ -236,6 +288,7 @@
         Potassium: "#7ed321",
       };
 
+      let categoryMap = {}; // Maps Capitalized category name to its raw download URL
       let foodDatabase = {};
       let currentTotals = {
         Calories: 0,
@@ -250,8 +303,6 @@
 
       // --- INITIALIZATION ---
       async function init() {
-        await loadCSV();
-
         if (!localStorage.getItem("gh_pat")) {
           const token = prompt(
             "Enter your GitHub Personal Access Token (PAT) with repo scope:",
@@ -260,14 +311,108 @@
         }
 
         renderCircles();
+        
+        document.getElementById("status").innerText = "Loading categories...";
+        await loadCategories();
 
         document.getElementById("status").innerText = "Loading today's log...";
         await fetchTodaysLog();
       }
 
-      async function loadCSV() {
+      async function loadCategories() {
+        const token = localStorage.getItem("gh_pat");
+        if (!token) return;
+
+        const apiUrl = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/categories?t=${new Date().getTime()}`;
+        
         try {
-          const response = await fetch(`foods.csv?t=${new Date().getTime()}`);
+          const res = await fetch(apiUrl, {
+            headers: {
+              Authorization: `token ${token}`,
+              Accept: "application/vnd.github.v3+json",
+            },
+            cache: "no-store",
+          });
+
+          if (!res.ok) throw new Error("Could not fetch categories directory");
+          
+          const files = await res.json();
+          const select = document.getElementById("category-select");
+          
+          files.forEach(file => {
+            if (file.name.endsWith('.csv')) {
+              const rawName = file.name.replace('.csv', '');
+              const capName = rawName.charAt(0).toUpperCase() + rawName.slice(1);
+              
+              categoryMap[capName] = file.download_url;
+              
+              const option = document.createElement("option");
+              option.value = capName;
+              option.textContent = capName;
+              select.appendChild(option);
+            }
+          });
+
+          // Add Custom option at the bottom
+          const customOption = document.createElement("option");
+          customOption.value = "Custom";
+          customOption.textContent = "Custom";
+          select.appendChild(customOption);
+
+          setStatus("Categories loaded.");
+        } catch (err) {
+          setStatus("Failed to load categories from GitHub.");
+          console.error(err);
+        }
+      }
+
+      async function onCategoryChange() {
+        const cat = document.getElementById("category-select").value;
+        const foodSelect = document.getElementById("food-select");
+        const customInputs = document.getElementById("custom-inputs");
+        const btnAdd = document.getElementById("btn-add");
+
+        // Reset food select
+        foodSelect.innerHTML = '<option value="">Select a food...</option>';
+
+        if (!cat) {
+          foodSelect.disabled = true;
+          btnAdd.disabled = true;
+          foodSelect.style.display = "block";
+          customInputs.style.display = "none";
+          return;
+        }
+
+        btnAdd.disabled = false;
+
+        if (cat === "Custom") {
+          foodSelect.style.display = "none";
+          customInputs.style.display = "flex";
+        } else {
+          foodSelect.style.display = "block";
+          customInputs.style.display = "none";
+          
+          foodSelect.disabled = true;
+          btnAdd.disabled = true;
+          setStatus(`Loading ${cat} foods...`);
+          
+          await loadCSV(categoryMap[cat]);
+          
+          foodSelect.disabled = false;
+          btnAdd.disabled = false;
+          setStatus(`${cat} foods loaded.`);
+        }
+      }
+
+      async function loadCSV(downloadUrl) {
+        try {
+          const token = localStorage.getItem("gh_pat");
+          // Download URL sometimes requires authentication if the repo is private
+          const headers = token ? { Authorization: `token ${token}` } : {};
+          
+          const response = await fetch(downloadUrl, { headers, cache: "no-store" });
+          if (!response.ok) throw new Error("Failed to download CSV");
+          
           const text = await response.text();
           const lines = text.split("\n").filter((line) => line.trim() !== "");
 
@@ -281,14 +426,15 @@
             const foodName = data[0].trim();
             foodNames.push(foodName);
 
+            // Keeps data globally available in foodDatabase even if category switches
             foodDatabase[foodName] = {
-              Calories: parseFloat(data[1]),
-              Fat: parseFloat(data[2]),
-              Carbs: parseFloat(data[3]),
-              Protein: parseFloat(data[4]),
-              Fiber: parseFloat(data[5]),
-              Sodium: parseFloat(data[6]),
-              Potassium: parseFloat(data[7]),
+              Calories: parseFloat(data[1]) || 0,
+              Fat: parseFloat(data[2]) || 0,
+              Carbs: parseFloat(data[3]) || 0,
+              Protein: parseFloat(data[4]) || 0,
+              Fiber: parseFloat(data[5]) || 0,
+              Sodium: parseFloat(data[6]) || 0,
+              Potassium: parseFloat(data[7]) || 0,
             };
           }
 
@@ -301,8 +447,8 @@
             select.appendChild(option);
           });
         } catch (err) {
-          document.getElementById("status").innerText =
-            "Failed to load foods.csv";
+          setStatus("Failed to load category CSV.");
+          console.error(err);
         }
       }
 
@@ -332,13 +478,44 @@
 
       // --- QUEUE LOGIC ---
       function addToQueue() {
-        const select = document.getElementById("food-select");
-        const foodName = select.value;
-        if (!foodName) return;
+        const cat = document.getElementById("category-select").value;
+        let foodName = "";
+
+        if (cat === "Custom") {
+          foodName = document.getElementById("custom-name").value.trim();
+          if (!foodName) {
+            setStatus("Please provide a name for the custom food.");
+            return;
+          }
+          
+          // Generate an entry in the DB specifically for this custom food addition
+          // Appending timestamp to avoid collisions if they log identically named custom items
+          const dbKey = `${foodName} (Custom)`; 
+          
+          foodDatabase[dbKey] = {
+            Calories: parseFloat(document.getElementById("custom-cal").value) || 0,
+            Fat: parseFloat(document.getElementById("custom-fat").value) || 0,
+            Carbs: parseFloat(document.getElementById("custom-carbs").value) || 0,
+            Protein: parseFloat(document.getElementById("custom-pro").value) || 0,
+            Fiber: parseFloat(document.getElementById("custom-fib").value) || 0,
+            Sodium: parseFloat(document.getElementById("custom-na").value) || 0,
+            Potassium: parseFloat(document.getElementById("custom-k").value) || 0,
+          };
+          
+          foodName = dbKey;
+          
+          // Clear inputs after successful queue
+          document.getElementById("custom-name").value = "";
+          document.querySelectorAll('.custom-macros input').forEach(input => input.value = "");
+        } else {
+          const select = document.getElementById("food-select");
+          foodName = select.value;
+          if (!foodName) return;
+          select.value = "";
+        }
 
         foodQueue.push(foodName);
         renderQueue();
-        select.value = "";
       }
 
       function removeFromQueue(index) {
@@ -386,7 +563,7 @@
               /Cal:\s*([\d.]+),\s*Fat:\s*([\d.]+)g,\s*Carbs:\s*([\d.]+)g,\s*Pro:\s*([\d.]+)g,\s*Fiber:\s*([\d.]+)g,\s*Na:\s*([\d.]+)mg,\s*K:\s*([\d.]+)mg/i;
 
             let entriesFound = 0;
-            let timeColors = {}; // Store time-to-color mapping
+            let timeColors = {};
 
             lines.forEach((line) => {
               const match = line.match(regex);
@@ -401,13 +578,11 @@
 
                 const displayText = line.split("- Cal:")[0].trim();
 
-                // Extract the time from the [time] bracket
                 let bgColorStyle = "";
                 const timeMatch = displayText.match(/^\[(.*?)\]/);
                 if (timeMatch) {
                   const timeStr = timeMatch[1];
                   if (!timeColors[timeStr]) {
-                    // Generate a random pastel color for readability
                     const hue = Math.floor(Math.random() * 360);
                     timeColors[timeStr] = `hsl(${hue}, 70%, 85%)`;
                   }
