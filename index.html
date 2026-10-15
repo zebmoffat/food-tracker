@@ -266,8 +266,8 @@
 
     <script>
       // --- CONFIGURATION ---
-      const GITHUB_USER = "zebmoffat"; // Update this
-      const GITHUB_REPO = "food-tracker"; // Update this
+      const GITHUB_USER = "zebmoffat";
+      const GITHUB_REPO = "food-tracker";
 
       const TRACKING_ORDER = [
         "Calories",
@@ -354,7 +354,8 @@
               const capName =
                 rawName.charAt(0).toUpperCase() + rawName.slice(1);
 
-              categoryMap[capName] = file.download_url;
+              // Store the local file name instead of the raw download URL to prevent CORS issues
+              categoryMap[capName] = file.name;
 
               const option = document.createElement("option");
               option.value = capName;
@@ -414,15 +415,13 @@
         }
       }
 
-      async function loadCSV(downloadUrl) {
+      async function loadCSV(fileName) {
         try {
-          const token = localStorage.getItem("gh_pat");
-          // Download URL sometimes requires authentication if the repo is private
-          const headers = token ? { Authorization: `token ${token}` } : {};
-
+          // Fetch directly from your own GitHub Pages domain using the relative file name
           const response = await fetch(
-            `categories/${categoryFile}?t=${new Date().getTime()}`,
+            `categories/${fileName}?t=${new Date().getTime()}`
           );
+          
           if (!response.ok) throw new Error("Failed to download CSV");
 
           const text = await response.text();
