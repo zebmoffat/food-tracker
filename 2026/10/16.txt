@@ -7,3 +7,7 @@
 [11:13:19 AM] Peanut Butter - Cal:180, Fat:15g, Carbs:7g, Pro:7g, Fiber:2g, Na:150mg, K:205mg
 [11:13:19 AM] Protein Powder - Cal:130, Fat:2g, Carbs:4g, Pro:25g, Fiber:0g, Na:140mg, K:210mg
 [11:13:19 AM] Protein Powder - Cal:130, Fat:2g, Carbs:4g, Pro:25g, Fiber:0g, Na:140mg, K:210mg
+[4:02:51 PM] Fruit Snacks - Cal:70, Fat:0g, Carbs:17g, Pro:1g, Fiber:0g, Na:0mg, K:0mg
+[4:02:51 PM] Fruit Snacks - Cal:70, Fat:0g, Carbs:17g, Pro:1g, Fiber:0g, Na:0mg, K:0mg
+[4:02:51 PM] Rice Krispy - Cal:90, Fat:2g, Carbs:17g, Pro:0g, Fiber:0g, Na:105mg, K:0mg
+[4:02:51 PM] Salt (1/4 Tsp) - Cal:0, Fat:0g, Carbs:0g, Pro:0g, Fiber:0g, Na:590mg, K:0mg
