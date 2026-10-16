@@ -1,68 +1,11 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Macro & Micro Tracker</title>
-    <link rel="stylesheet" href="./css/style.css" />
+    <meta http-equiv="refresh" content="0; url=nutrition.html" />
   </head>
   <body>
-    <div class="dashboard" id="dashboard">
-      <!-- Circles injected via JS -->
-    </div>
-
-    <div class="controls">
-      <div class="input-group">
-        <!-- New Category Select -->
-        <select id="category-select" onchange="onCategoryChange()">
-          <option value="">Select a category...</option>
-        </select>
-
-        <div class="add-group">
-          <!-- Existing Food Select -->
-          <select id="food-select" onchange="onFoodChange()" disabled>
-            <option value="">Select a food...</option>
-          </select>
-          <button class="btn-add" id="btn-add" onclick="addToQueue()" disabled>
-            Add
-          </button>
-        </div>
-
-        <!-- Custom Food Inputs -->
-        <div id="custom-inputs" class="custom-inputs">
-          <input type="text" id="custom-name" placeholder="Custom Food Name" />
-          <div class="custom-macros">
-            <input type="number" id="custom-cal" placeholder="Cal" min="0" />
-            <input type="number" id="custom-fat" placeholder="Fat" min="0" />
-            <input type="number" id="custom-carbs" placeholder="Carbs" min="0" />
-            <input type="number" id="custom-pro" placeholder="Pro" min="0" />
-            <input type="number" id="custom-fib" placeholder="Fib" min="0" />
-            <input type="number" id="custom-na" placeholder="Na" min="0" />
-            <input type="number" id="custom-k" placeholder="K" min="0" />
-          </div>
-        </div>
-      </div>
-
-      <ul id="queue-list"></ul>
-
-      <button
-        class="btn-submit"
-        id="submit-btn"
-        onclick="submitFood()"
-        disabled
-      >
-        Log Food
-      </button>
-      <div id="status"></div>
-    </div>
-
-    <div class="log-container">
-      <h3 onclick="promptForPat()" style="cursor: pointer;">Today's Log</h3>
-      <ul id="daily-log-list">
-        <!-- Logged items injected via JS -->
-      </ul>
-    </div>
-
-    <script src="./js/script.js"></script>
+    <script>
+      window.location.href = "nutrition.html";
+    </script>
   </body>
 </html>

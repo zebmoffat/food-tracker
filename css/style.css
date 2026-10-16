@@ -193,3 +193,31 @@ select:disabled {
   margin-bottom: 8px;
   border-radius: 8px;
 }
+/* Navigation Header */
+.app-nav {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.nav-btn {
+  flex: 1;
+  max-width: 150px;
+  padding: 10px;
+  font-size: 16px;
+  background: #e0e0e0;
+  color: #555;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    color 0.2s;
+}
+
+.nav-btn.active {
+  background: #34495e; /* Matches the Calories circle color */
+  color: white;
+  font-weight: bold;
+}
