@@ -13,7 +13,7 @@ const TRACKING_ORDER = [
 ];
 const DAILY_GOALS = {
   Calories: 2300,
-  Fat: 80,
+  Fat: 55,
   Carbs: 260,
   Protein: 150,
   Fiber: 40,
