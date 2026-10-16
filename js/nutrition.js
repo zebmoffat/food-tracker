@@ -187,7 +187,7 @@ async function loadCSV(fileName) {
   try {
     // Fetch directly from your own GitHub Pages domain using the relative file name
     const response = await fetch(
-      `categories/${fileName}?t=${new Date().getTime()}`,
+      `../categories/${fileName}?t=${new Date().getTime()}`,
     );
 
     if (!response.ok) throw new Error("Failed to download CSV");
