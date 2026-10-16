@@ -1,6 +1,6 @@
 // --- CONFIGURATION ---
 const GITHUB_USER = "zebmoffat";
-const GITHUB_REPO = "food-tracker";
+const GITHUB_REPO = "tracker";
 
 const TRACKING_ORDER = [
   "Calories",
@@ -13,8 +13,8 @@ const TRACKING_ORDER = [
 ];
 const DAILY_GOALS = {
   Calories: 2300,
-  Fat: 90,
-  Carbs: 222,
+  Fat: 80,
+  Carbs: 260,
   Protein: 150,
   Fiber: 40,
   Sodium: 3000,
