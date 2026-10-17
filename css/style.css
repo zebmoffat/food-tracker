@@ -33,14 +33,33 @@ body::-webkit-scrollbar {
   width: 100px;
   height: 100px;
   border-radius: 50%;
-  background: conic-gradient(var(--color) calc(var(--percent) * 1%), #e0e0e0 0);
+  /* Stack the main color, then the what-if color, then the gray background */
+  background: conic-gradient(
+    var(--color) calc(var(--percent) * 1%),
+    var(--whatif-color) calc(var(--percent) * 1%),
+    var(--whatif-color) calc(var(--total-percent) * 1%),
+    #e0e0e0 0
+  );
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 10px;
 }
+
 .circle.over {
-  background: conic-gradient(#ff4d4d calc(var(--percent) * 1%), #e0e0e0 0);
+  background: conic-gradient(
+    #ff4d4d calc(var(--percent) * 1%),
+    #ffb3b3 calc(var(--percent) * 1%),
+    #ffb3b3 calc(var(--total-percent) * 1%),
+    #e0e0e0 0
+  );
+}
+
+.what-if-text {
+  font-size: 11px;
+  color: #888;
+  display: block;
+  font-weight: normal;
 }
 .circle-inner {
   width: 80px;

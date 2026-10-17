@@ -235,23 +235,57 @@ function renderCircles() {
   const dash = document.getElementById("dashboard");
   dash.innerHTML = "";
 
+  // 1. Calculate the "What If" totals from the current queue
+  const queuedTotals = {
+    Calories: 0,
+    Fat: 0,
+    Carbs: 0,
+    Protein: 0,
+    Fiber: 0,
+    Sodium: 0,
+    Potassium: 0,
+  };
+
+  foodQueue.forEach((foodName) => {
+    const m = foodDatabase[foodName];
+    if (m) {
+      TRACKING_ORDER.forEach((macro) => {
+        queuedTotals[macro] += m[macro];
+      });
+    }
+  });
+
   const targetPercents = {};
+  const targetTotalPercents = {};
 
   TRACKING_ORDER.forEach((macro) => {
     const val = currentTotals[macro];
+    const queuedVal = queuedTotals[macro];
+    const totalVal = val + queuedVal;
     const goal = DAILY_GOALS[macro];
+
     const percent = Math.min((val / goal) * 100, 100);
-    const isOver = val > goal;
+    const totalPercent = Math.min((totalVal / goal) * 100, 100);
+    const isOver = totalVal > goal;
 
-    // Store target for the animation loop
     targetPercents[macro] = percent;
+    targetTotalPercents[macro] = totalPercent;
 
-    // Inject with --percent: 0 and unique IDs to target in the loop
+    // Create a lighter version of the main color for the what-if section
+    const mainColor = COLORS[macro];
+    const whatIfColor = mainColor + "66"; // Appends 40% opacity in hex
+
+    let whatIfHtml =
+      queuedVal > 0
+        ? `<span class="what-if-text">(+${queuedVal.toFixed(1)})</span>`
+        : "";
+
     dash.innerHTML += `
           <div class="circle-wrap">
-              <div class="circle ${isOver ? "over" : ""}" id="circle-${macro}" style="--percent: 0; --color: ${COLORS[macro]}">
+              <div class="circle ${isOver ? "over" : ""}" id="circle-${macro}" 
+                   style="--percent: 0; --total-percent: 0; --color: ${mainColor}; --whatif-color: ${whatIfColor};">
                   <div class="circle-inner">
-                      <strong>${val.toFixed(1)}</strong>
+                      <strong>${val.toFixed(1)} ${whatIfHtml}</strong>
                       <span>/ ${goal}</span>
                   </div>
               </div>
@@ -262,13 +296,12 @@ function renderCircles() {
 
   // Animate the circles filling up
   let startTimestamp = null;
-  const duration = 800; // Animation duration in milliseconds
+  const duration = 800;
 
   function animate(timestamp) {
     if (!startTimestamp) startTimestamp = timestamp;
     const progress = Math.min((timestamp - startTimestamp) / duration, 1);
 
-    // easeOutQuart for a smooth deceleration as it hits the target
     const easeProgress = 1 - Math.pow(1 - progress, 4);
 
     TRACKING_ORDER.forEach((macro) => {
@@ -277,6 +310,10 @@ function renderCircles() {
         circleEl.style.setProperty(
           "--percent",
           targetPercents[macro] * easeProgress,
+        );
+        circleEl.style.setProperty(
+          "--total-percent",
+          targetTotalPercents[macro] * easeProgress,
         );
       }
     });
@@ -348,6 +385,9 @@ function renderQueue() {
     list.innerHTML += `<li>${food} <button class="btn-remove" onclick="removeFromQueue(${index})">×</button></li>`;
   });
   document.getElementById("submit-btn").disabled = foodQueue.length === 0;
+
+  //update the what-if circles every time then queje changes
+  renderCircles();
 }
 
 async function fetchTodaysLog() {
