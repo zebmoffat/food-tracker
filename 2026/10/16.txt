@@ -14,4 +14,7 @@
 [6:00:29 PM] Mango - Cal:90, Fat:0g, Carbs:24g, Pro:1g, Fiber:2g, Na:0mg, K:370mg
 [6:00:29 PM] Flax Seed - Cal:100, Fat:7g, Carbs:5g, Pro:4g, Fiber:4g, Na:10mg, K:130mg
 [6:00:29 PM] Raw Salad Mix (1 Cup) - Cal:10, Fat:0g, Carbs:2g, Pro:0g, Fiber:1g, Na:14mg, K:120mg[6:06:48 PM] 2M + 2PP - Cal:440, Fat:4g, Carbs:36g, Pro:68g, Fiber:0g, Na:560mg, K:1302mg
-[6:07:48 PM] 2M + 2PP - Cal:440, Fat:4g, Carbs:36g, Pro:68g, Fiber:0g, Na:560mg, K:1302mg
+[7:03:05 PM] Bagel - Cal:230, Fat:2g, Carbs:45g, Pro:9g, Fiber:2g, Na:350mg, K:80mg
+[7:03:05 PM] Butter - Cal:90, Fat:10g, Carbs:0g, Pro:0g, Fiber:0g, Na:95mg, K:0mg
+[7:03:05 PM] Milk (Skim) - Cal:90, Fat:0g, Carbs:14g, Pro:9g, Fiber:0g, Na:140mg, K:441mg
+[7:03:05 PM] Protein Powder - Cal:130, Fat:2g, Carbs:4g, Pro:25g, Fiber:0g, Na:140mg, K:210mg
