@@ -8,10 +8,16 @@
   </head>
   <body>
     <div class="app-nav">
-      <button class="nav-btn active" onclick="window.location.href='nutrition.html'">Nutrition</button>
-      <button class="nav-btn" onclick="window.location.href='fitness.html'">Fitness</button>
-      <button class="nav-btn" onclick="window.location.href='weight.html'">Weight</button>
-      <button class="nav-btn" onclick="window.location.href='visuals.html'">Visuals</button>
+      <button class="nav-btn active">Nutrition</button>
+      <button class="nav-btn" onclick="window.location.href = 'fitness.html'">
+        Fitness
+      </button>
+      <button class="nav-btn" onclick="window.location.href = 'weight.html'">
+        Weight
+      </button>
+      <button class="nav-btn" onclick="window.location.href = 'visuals.html'">
+        Visuals
+      </button>
     </div>
 
     <div class="dashboard" id="dashboard">
@@ -41,7 +47,12 @@
           <div class="custom-macros">
             <input type="number" id="custom-cal" placeholder="Cal" min="0" />
             <input type="number" id="custom-fat" placeholder="Fat" min="0" />
-            <input type="number" id="custom-carbs" placeholder="Carbs" min="0" />
+            <input
+              type="number"
+              id="custom-carbs"
+              placeholder="Carbs"
+              min="0"
+            />
             <input type="number" id="custom-pro" placeholder="Pro" min="0" />
             <input type="number" id="custom-fib" placeholder="Fib" min="0" />
             <input type="number" id="custom-na" placeholder="Na" min="0" />
@@ -64,7 +75,7 @@
     </div>
 
     <div class="log-container">
-      <h3 onclick="promptForPat()" style="cursor: pointer;">Today's Log</h3>
+      <h3 onclick="promptForPat()" style="cursor: pointer">Today's Log</h3>
       <ul id="daily-log-list">
         <!-- Logged items injected via JS -->
       </ul>
